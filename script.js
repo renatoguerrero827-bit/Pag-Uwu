@@ -1,6 +1,11 @@
 // Cart array to store selected items
 let cart = [];
 
+// CONFIGURACIÓN DISCORD
+// Pega aquí tu URL del Webhook de Discord
+// Nota: Si usas esto desde el navegador directamente, es posible que necesites un proxy CORS (ej: https://corsproxy.io/?TU_URL)
+const DISCORD_WEBHOOK_URL = 'https://corsproxy.io/?https://discord.com/api/webhooks/1456163031598895125/5DEIC4Tgt_7qT0BaZBTiZ9tHx-e_JYSc8jqmINOBZlm-GcmghmkshE_3uxxcidCU-PRW'; 
+
 // DOM Elements
 const cartBtn = document.getElementById('cart-btn');
 const cartModal = document.getElementById('cart-modal');
@@ -238,9 +243,68 @@ checkoutBtn.addEventListener('click', () => {
     let bundles = Math.min(Math.floor(drinks / 3), Math.floor(foods / 3));
     let discount = bundles * (6 * 600 - 1600);
     let total = baseTotal - discount;
+    
+    // Enviar a Discord
+    sendOrderToDiscord(cart, total, discount);
+
     alert(`¡Gracias por tu compra! \nTotal a pagar: $${total.toFixed(2)}\n\nTu pedido llegará pronto. 🛵💨`);
     
     cart = [];
     updateCartUI();
     cartModal.classList.add('hidden');
 });
+
+function sendOrderToDiscord(cartItems, total, discount) {
+    if (!DISCORD_WEBHOOK_URL) {
+        console.log('Webhook de Discord no configurado.');
+        return;
+    }
+
+    const itemsList = cartItems.map(item => 
+        `• **${item.name}** (x${item.quantity}) - $${(item.price * item.quantity).toFixed(0)}`
+    ).join('\n');
+
+    const payload = {
+        embeds: [{
+            title: "✨ Nuevo Pedido Recibido 🛍️",
+            description: "¡Alguien ha realizado una compra en el Menú UwU!",
+            color: 16738740, // Color rosado (#ff6b74)
+            fields: [
+                {
+                    name: "📋 Productos",
+                    value: itemsList || "Sin productos"
+                },
+                {
+                    name: "💵 Resumen",
+                    value: `Subtotal: $${(total + discount).toFixed(0)}\nDescuento: -$${discount.toFixed(0)}\n**Total a Pagar: $${total.toFixed(0)}**`
+                }
+            ],
+            footer: {
+                text: `Pedido realizado el ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}`
+            },
+            thumbnail: {
+                url: "https://i.imgur.com/example.png" // Puedes poner un logo real aquí
+            }
+        }]
+    };
+
+    fetch(DISCORD_WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => {
+        if (!response.ok) {
+            console.error('Error enviando a Discord:', response.statusText);
+            // Si falla por CORS, el navegador lanzará error en el catch normalmente o response type opaque
+        } else {
+            console.log('Pedido registrado en Discord correctamente');
+        }
+    })
+    .catch(error => {
+        console.error('Error al conectar con Discord:', error);
+        console.warn('NOTA: Si estás ejecutando esto localmente, Discord bloquea las peticiones por seguridad (CORS). Intenta usar un proxy como https://corsproxy.io/?TU_WEBHOOK_URL');
+    });
+}
