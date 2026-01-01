@@ -254,18 +254,27 @@ checkoutBtn.addEventListener('click', () => {
     let discount = bundles * (6 * 600 - 1600);
     let total = baseTotal - discount;
     
-    // Enviar a Discord
-    sendOrderToDiscord(cart, total, discount, customerName);
+    // Obtener tipo de pedido
+    const orderTypeInput = document.querySelector('input[name="order-type"]:checked');
+    const orderType = orderTypeInput ? orderTypeInput.value : 'local';
+    const orderTypeText = orderType === 'delivery' ? 'Delivery 🛵' : 'Local 🏪';
 
-    alert(`¡Gracias por tu compra, ${customerName}! \nTotal a pagar: $${total.toFixed(2)}\n\nTu pedido llegará pronto. 🛵💨`);
+    // Enviar a Discord
+    sendOrderToDiscord(cart, total, discount, customerName, orderTypeText);
+
+    alert(`¡Gracias por tu compra, ${customerName}! \nTipo: ${orderTypeText}\nTotal a pagar: $${total.toFixed(2)}\n\nTu pedido llegará pronto.`);
     
     cart = [];
     if(customerNameInput) customerNameInput.value = ''; // Limpiar nombre
+    // Resetear radio button a Local
+    const localRadio = document.querySelector('input[name="order-type"][value="local"]');
+    if(localRadio) localRadio.checked = true;
+    
     updateCartUI();
     cartModal.classList.add('hidden');
 });
 
-function sendOrderToDiscord(cartItems, total, discount, customerName) {
+function sendOrderToDiscord(cartItems, total, discount, customerName, orderType) {
     if (!DISCORD_WEBHOOK_URL) {
         console.log('Webhook de Discord no configurado.');
         return;
@@ -287,7 +296,7 @@ function sendOrderToDiscord(cartItems, total, discount, customerName) {
     const payload = {
         embeds: [{
             title: `✨ Nuevo Pedido Recibido #${orderNumber} 🛍️`,
-            description: `**Cliente:** ${customerName}`,
+            description: `**Cliente:** ${customerName}\n**Tipo de Pedido:** ${orderType}`,
             color: 16738740, // Color rosado (#ff6b74)
             fields: [
                 {

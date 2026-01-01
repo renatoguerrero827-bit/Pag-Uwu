@@ -216,6 +216,21 @@
                 <input type="text" id="customer-name" placeholder="Tu nombre..." maxlength="30">
             </div>
 
+            <!-- Order Type Selection -->
+            <div class="order-type-group">
+                <label class="order-type-label">Tipo de Pedido:</label>
+                <div class="order-type-options">
+                    <label class="radio-option">
+                        <input type="radio" name="order-type" value="local" checked>
+                        <span>Local 🏪</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="order-type" value="delivery">
+                        <span>Delivery 🛵</span>
+                    </label>
+                </div>
+            </div>
+
             <button id="clear-cart-btn">Vaciar carrito 🧹</button>
             <button id="checkout-btn">Pagar Ahora ✨</button>
         </div>
