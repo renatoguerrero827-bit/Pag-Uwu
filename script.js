@@ -241,6 +241,14 @@ checkoutBtn.addEventListener('click', () => {
     const customerNameInput = document.getElementById('customer-name');
     const customerName = customerNameInput ? customerNameInput.value.trim() : 'Anónimo';
 
+    // COMANDO SECRETO: Reiniciar contador de órdenes
+    if (customerName.toUpperCase() === 'RESET') {
+        localStorage.setItem('uwu_order_count', '0');
+        alert('🔄 Contador de órdenes reiniciado a 0. La próxima orden será la #1.');
+        customerNameInput.value = '';
+        return;
+    }
+
     if (!customerName) {
         alert('Por favor, escribe tu nombre o número de mesa antes de pagar. ✍️');
         customerNameInput.focus();
