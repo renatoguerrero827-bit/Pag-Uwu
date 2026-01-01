@@ -5,6 +5,8 @@ let cart = [];
 // Pega aquí tu URL del Webhook de Discord
 // Nota: Si usas esto desde el navegador directamente, es posible que necesites un proxy CORS (ej: https://corsproxy.io/?TU_URL)
 const DISCORD_WEBHOOK_URL = 'https://corsproxy.io/?https://discord.com/api/webhooks/1456194404216737857/y5_szzKa4gH12g0ANvy4ZXL_FEjXF0Ue0CaDVCi_61y0VYrhfjJ-u13Aua5SU6cz5Fre'; 
+const DELIVERY_FEE = 300;
+const MAX_QTY = 99;
 
 // DOM Elements
 const cartBtn = document.getElementById('cart-btn');
@@ -84,6 +86,7 @@ addToCartButtons.forEach(button => {
         const price = parseFloat(button.getAttribute('data-price'));
         
         addToCart(name, price);
+        cartModal.classList.remove('hidden');
     });
 });
 
@@ -130,9 +133,18 @@ function updateCartUI() {
     let bundles = Math.min(Math.floor(drinks / 3), Math.floor(foods / 3));
     let discount = bundles * (6 * 600 - 1600);
     let total = baseTotal - discount;
-    cartTotalElement.textContent = `$${total.toFixed(2)}`;
+    const orderTypeSel = document.querySelector('input[name="order-type"]:checked');
+    const isDelivery = orderTypeSel && orderTypeSel.value === 'delivery';
+    const deliveryFee = isDelivery ? DELIVERY_FEE : 0;
+    const displayTotal = total + deliveryFee;
+    cartTotalElement.textContent = `$${displayTotal.toFixed(2)}`;
+    const cartTotalLabel = document.querySelector('.cart-total span:first-child');
+    if (cartTotalLabel) {
+        cartTotalLabel.textContent = isDelivery ? 'Total (incluye delivery):' : 'Total:';
+    }
     if (offerNoteElement) {
-        offerNoteElement.textContent = bundles > 0 ? `Oferta aplicada: ${bundles} combo(s) 3+3 por $1600 • Ahorro $${discount}` : '';
+        const offerText = bundles > 0 ? `Oferta aplicada: ${bundles} combo(s) 3+3 por $1600 • Ahorro $${discount}` : '';
+        offerNoteElement.textContent = isDelivery ? `${offerText}${offerText ? ' • ' : ''}Delivery +$${DELIVERY_FEE}` : offerText;
     }
     
     // Render Cart Items
@@ -141,29 +153,34 @@ function updateCartUI() {
     if (cart.length === 0) {
         cartItemsContainer.innerHTML = '<p class="empty-cart-msg">Tu carrito está vacío 😿</p>';
     } else {
-        cart.forEach((item, index) => {
-            const cartItem = document.createElement('div');
-            cartItem.classList.add('cart-item');
-            
-            cartItem.innerHTML = `
-                <div class="cart-item-info">
-                    <div class="cart-item-title">${item.name}</div>
-                    <div class="cart-item-price">$${item.price.toFixed(2)}</div>
-                </div>
-                <div class="cart-item-controls">
-                    <button class="qty-btn" onclick="changeQuantity(${index}, -1)">-</button>
-                    <span class="qty-display">${item.quantity}</span>
-                    <button class="qty-btn" onclick="changeQuantity(${index}, 1)">+</button>
-                </div>
-                <button class="cart-item-remove" onclick="removeFromCart(${index})">🗑️</button>
-            `;
-            
-            cartItemsContainer.appendChild(cartItem);
-        });
-    }
+            cart.forEach((item, index) => {
+                const cartItem = document.createElement('div');
+                cartItem.classList.add('cart-item');
+                
+                cartItem.innerHTML = `
+                    <div class="cart-item-info">
+                        <div class="cart-item-title">${item.name}</div>
+                        <div class="cart-item-price">$${item.price.toFixed(2)}</div>
+                    </div>
+                    <div class="cart-item-controls">
+                        <button class="qty-btn" onclick="adjustQuantityDraft(${index}, -1)">-</button>
+                        <input id="qty-input-${index}" class="qty-input" type="number" min="1" max="${MAX_QTY}" value="${item.quantity}" onkeydown="qtyInputKey(${index}, event)">
+                        <button class="qty-btn" onclick="adjustQuantityDraft(${index}, 1)">+</button>
+                        <button class="qty-btn" onclick="confirmQuantity(${index})">✓</button>
+                    </div>
+                    <button class="cart-item-remove" onclick="removeFromCart(${index})">🗑️</button>
+                `;
+                
+                cartItemsContainer.appendChild(cartItem);
+            });
+        }
     
     updateOfferUI();
 }
+
+document.querySelectorAll('input[name="order-type"]').forEach(r => {
+    r.addEventListener('change', () => updateCartUI());
+});
 
 function updateOfferUI() {
     if (!offerFoodsCount || !offerDrinksCount || !offerBundlesCount || !offerSavingsEl) return;
@@ -194,30 +211,66 @@ function updateProductButtons() {
                 controls.className = 'quantity-controls';
                 controls.innerHTML = `
                     <button class="qty-control-btn minus"><i class="fas fa-minus">-</i></button>
-                    <span class="qty-control-val">${item.quantity}</span>
+                    <input class="qty-control-val" type="number" min="1" max="${MAX_QTY}" inputmode="numeric" value="${item.quantity}">
                     <button class="qty-control-btn plus"><i class="fas fa-plus">+</i></button>
+                    <button class="qty-control-btn confirm">✓</button>
                 `;
                 
                 // Add listeners
                 const minusBtn = controls.querySelector('.minus');
                 const plusBtn = controls.querySelector('.plus');
+                const qtyInput = controls.querySelector('.qty-control-val');
+                const confirmBtn = controls.querySelector('.confirm');
                 
                 minusBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const idx = cart.findIndex(i => i.name === name);
-                    if (idx > -1) changeQuantity(idx, -1);
+                    let val = parseInt(qtyInput.value || '1', 10);
+                    if (isNaN(val)) val = 1;
+                    val = Math.max(1, val - 1);
+                    qtyInput.value = val;
                 });
                 
                 plusBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    addToCart(name, price);
+                    let val = parseInt(qtyInput.value || '1', 10);
+                    if (isNaN(val)) val = 1;
+                    val = Math.min(MAX_QTY, val + 1);
+                    qtyInput.value = val;
+                });
+                
+                qtyInput.addEventListener('input', (e) => {
+                    let val = parseInt(e.target.value || '1', 10);
+                    if (isNaN(val)) val = 1;
+                    if (val < 1) val = 1;
+                    if (val > MAX_QTY) val = MAX_QTY;
+                    e.target.value = val;
+                });
+                qtyInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        const idx = cart.findIndex(i => i.name === name);
+                        if (idx > -1) {
+                            cart[idx].quantity = parseInt(qtyInput.value, 10);
+                            updateCartUI();
+                        }
+                    } else if (e.key === 'Escape') {
+                        qtyInput.value = item.quantity;
+                    }
+                });
+                confirmBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const idx = cart.findIndex(i => i.name === name);
+                    if (idx > -1) {
+                        cart[idx].quantity = parseInt(qtyInput.value, 10);
+                        updateCartUI();
+                    }
                 });
                 
                 // Insert after the button
                 button.insertAdjacentElement('afterend', controls);
             } else {
                 controls.style.display = 'flex';
-                controls.querySelector('.qty-control-val').textContent = item.quantity;
+                const input = controls.querySelector('.qty-control-val');
+                if (input) input.value = item.quantity;
             }
         } else {
             button.style.display = 'block';
@@ -266,11 +319,24 @@ checkoutBtn.addEventListener('click', () => {
     const orderTypeInput = document.querySelector('input[name="order-type"]:checked');
     const orderType = orderTypeInput ? orderTypeInput.value : 'local';
     const orderTypeText = orderType === 'delivery' ? 'Delivery 🛵' : 'Local 🏪';
+    const deliveryFee = orderType === 'delivery' ? DELIVERY_FEE : 0;
+    total = total + deliveryFee;
 
     // Enviar a Discord
-    sendOrderToDiscord(cart, total, discount, customerName, orderTypeText);
+    sendOrderToDiscord(cart, total, discount, customerName, orderTypeText, deliveryFee);
 
-    alert(`¡Gracias por tu compra, ${customerName}! \nTipo: ${orderTypeText}\nTotal a pagar: $${total.toFixed(2)}\n\nTu pedido llegará pronto.`);
+    // Mostrar modal de éxito personalizado
+    document.getElementById('success-customer').textContent = customerName;
+    document.getElementById('success-type').textContent = orderTypeText;
+    document.getElementById('success-total').textContent = `$${total.toFixed(0)}`;
+    
+    const successModal = document.getElementById('success-modal');
+    successModal.classList.remove('hidden');
+
+    // Cerrar el modal de éxito
+    document.getElementById('close-success-btn').onclick = () => {
+        successModal.classList.add('hidden');
+    };
     
     cart = [];
     if(customerNameInput) customerNameInput.value = ''; // Limpiar nombre
@@ -282,7 +348,36 @@ checkoutBtn.addEventListener('click', () => {
     cartModal.classList.add('hidden');
 });
 
-function sendOrderToDiscord(cartItems, total, discount, customerName, orderType) {
+function confirmQuantity(index) {
+    const input = document.getElementById(`qty-input-${index}`);
+    if (!input) return;
+    let val = parseInt(input.value || '1', 10);
+    if (isNaN(val)) val = 1;
+    if (val < 1) val = 1;
+    if (val > MAX_QTY) val = MAX_QTY;
+    cart[index].quantity = val;
+    updateCartUI();
+}
+
+function qtyInputKey(index, e) {
+    if (e.key === 'Enter') {
+        confirmQuantity(index);
+    } else if (e.key === 'Escape') {
+        const input = document.getElementById(`qty-input-${index}`);
+        if (input) input.value = cart[index].quantity;
+    }
+}
+
+function adjustQuantityDraft(index, delta) {
+    const input = document.getElementById(`qty-input-${index}`);
+    if (!input) return;
+    let val = parseInt(input.value || '1', 10);
+    if (isNaN(val)) val = 1;
+    val = Math.max(1, Math.min(MAX_QTY, val + delta));
+    input.value = val;
+}
+
+function sendOrderToDiscord(cartItems, total, discount, customerName, orderType, deliveryFee = 0) {
     if (!DISCORD_WEBHOOK_URL) {
         console.log('Webhook de Discord no configurado.');
         return;
@@ -313,7 +408,7 @@ function sendOrderToDiscord(cartItems, total, discount, customerName, orderType)
                 },
                 {
                     name: "💵 Resumen",
-                    value: `Subtotal: $${(total + discount).toFixed(0)}\nDescuento: -$${discount.toFixed(0)}\n**Total a Pagar: $${total.toFixed(0)}**`
+                    value: `Subtotal: $${(total + discount - deliveryFee).toFixed(0)}\nDescuento: -$${discount.toFixed(0)}${deliveryFee > 0 ? `\nDelivery: +$${deliveryFee.toFixed(0)}` : ''}\n**Total a Pagar: $${total.toFixed(0)}**`
                 }
             ],
             footer: {

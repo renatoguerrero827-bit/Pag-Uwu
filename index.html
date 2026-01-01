@@ -236,6 +236,33 @@
         </div>
     </div>
 
+    <!-- Success Modal -->
+    <div id="success-modal" class="modal hidden">
+        <div class="modal-content success-content">
+            <div class="success-icon">🎉</div>
+            <h2>¡Pedido Confirmado!</h2>
+            <div class="success-details">
+                <p id="success-message">Tu pedido ha sido enviado.</p>
+                <div class="order-summary-card">
+                    <div class="summary-row">
+                        <span>Cliente:</span>
+                        <strong id="success-customer"></strong>
+                    </div>
+                    <div class="summary-row">
+                        <span>Tipo:</span>
+                        <strong id="success-type"></strong>
+                    </div>
+                    <div class="summary-row total-row">
+                        <span>Total:</span>
+                        <strong id="success-total"></strong>
+                    </div>
+                </div>
+                <p class="success-note">Tu pedido llegará pronto. 🛵💨</p>
+            </div>
+            <button id="close-success-btn">¡Genial! 💖</button>
+        </div>
+    </div>
+
     <script src="script.js?v=2"></script>
 </body>
 </html>
