@@ -1,0 +1,26 @@
+HOLA! 👋
+
+Aquí es donde debes guardar las fotos de tus productos para el Menú UwU.
+
+PASOS PARA QUE TUS IMÁGENES SE VEAN:
+
+1. Copia tus fotos en esta carpeta "images".
+2. Ponles nombres simples y fáciles de escribir, sin espacios ni caracteres extraños. 
+   Por ejemplo:
+   - choco-kitty.jpg
+   - cat-paw.png
+   - donut-milkshake.jpg
+
+3. Ve al archivo "index.html" y cambia el enlace de la imagen.
+   
+   Donde dice algo como:
+   <img src="https://placehold.co/..." ...>
+   
+   Cámbialo por el nombre de tu archivo:
+   <img src="images/choco-kitty.jpg" ...>
+
+RECOMENDACIONES:
+- Intenta que todas las imágenes sean más o menos del mismo tamaño (rectangulares funcionan mejor) para que el menú se vea ordenado.
+- Formatos recomendados: .jpg o .png
+
+¡Suerte con tu menú! 🥤✨
