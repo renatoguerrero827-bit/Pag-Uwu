@@ -4,7 +4,7 @@ let cart = [];
 // CONFIGURACIÓN DISCORD
 // Pega aquí tu URL del Webhook de Discord
 // Nota: Si usas esto desde el navegador directamente, es posible que necesites un proxy CORS (ej: https://corsproxy.io/?TU_URL)
-const DISCORD_WEBHOOK_URL = 'https://corsproxy.io/?https://discord.com/api/webhooks/1456163031598895125/5DEIC4Tgt_7qT0BaZBTiZ9tHx-e_JYSc8jqmINOBZlm-GcmghmkshE_3uxxcidCU-PRW'; 
+const DISCORD_WEBHOOK_URL = 'https://corsproxy.io/?https://discord.com/api/webhooks/1456194404216737857/y5_szzKa4gH12g0ANvy4ZXL_FEjXF0Ue0CaDVCi_61y0VYrhfjJ-u13Aua5SU6cz5Fre'; 
 
 // DOM Elements
 const cartBtn = document.getElementById('cart-btn');
