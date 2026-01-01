@@ -661,6 +661,27 @@ footer {
     margin-bottom: 15px;
 }
 
+.customer-input-group {
+    margin-bottom: 15px;
+}
+
+#customer-name {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #eee;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-family: var(--body-font);
+    outline: none;
+    transition: border-color 0.3s;
+    background: #f9f9f9;
+}
+
+#customer-name:focus {
+    border-color: var(--accent-color);
+    background: white;
+}
+
 #clear-cart-btn {
     background-color: #ffffff;
     color: var(--accent-color);

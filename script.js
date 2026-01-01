@@ -236,6 +236,16 @@ checkoutBtn.addEventListener('click', () => {
         alert('¡Tu carrito está vacío! Agrega algunas cositas ricas primero.');
         return;
     }
+
+    // Validar nombre
+    const customerNameInput = document.getElementById('customer-name');
+    const customerName = customerNameInput ? customerNameInput.value.trim() : 'Anónimo';
+
+    if (!customerName) {
+        alert('Por favor, escribe tu nombre o número de mesa antes de pagar. ✍️');
+        customerNameInput.focus();
+        return;
+    }
     
     let baseTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     let drinks = cart.reduce((sum, item) => sum + (categories[item.name] === 'beb' ? item.quantity : 0), 0);
@@ -245,16 +255,17 @@ checkoutBtn.addEventListener('click', () => {
     let total = baseTotal - discount;
     
     // Enviar a Discord
-    sendOrderToDiscord(cart, total, discount);
+    sendOrderToDiscord(cart, total, discount, customerName);
 
-    alert(`¡Gracias por tu compra! \nTotal a pagar: $${total.toFixed(2)}\n\nTu pedido llegará pronto. 🛵💨`);
+    alert(`¡Gracias por tu compra, ${customerName}! \nTotal a pagar: $${total.toFixed(2)}\n\nTu pedido llegará pronto. 🛵💨`);
     
     cart = [];
+    if(customerNameInput) customerNameInput.value = ''; // Limpiar nombre
     updateCartUI();
     cartModal.classList.add('hidden');
 });
 
-function sendOrderToDiscord(cartItems, total, discount) {
+function sendOrderToDiscord(cartItems, total, discount, customerName) {
     if (!DISCORD_WEBHOOK_URL) {
         console.log('Webhook de Discord no configurado.');
         return;
@@ -276,7 +287,7 @@ function sendOrderToDiscord(cartItems, total, discount) {
     const payload = {
         embeds: [{
             title: `✨ Nuevo Pedido Recibido #${orderNumber} 🛍️`,
-            description: "¡Alguien ha realizado una compra en el Menú UwU!",
+            description: `**Cliente:** ${customerName}`,
             color: 16738740, // Color rosado (#ff6b74)
             fields: [
                 {
@@ -290,9 +301,6 @@ function sendOrderToDiscord(cartItems, total, discount) {
             ],
             footer: {
                 text: `Pedido #${orderNumber} • ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}`
-            },
-            thumbnail: {
-                url: "https://i.imgur.com/example.png" // Puedes poner un logo real aquí
             }
         }]
     };
