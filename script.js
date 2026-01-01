@@ -260,13 +260,22 @@ function sendOrderToDiscord(cartItems, total, discount) {
         return;
     }
 
+    // Obtener y actualizar número de orden
+    let orderNumber = localStorage.getItem('uwu_order_count');
+    if (!orderNumber) {
+        orderNumber = 1;
+    } else {
+        orderNumber = parseInt(orderNumber) + 1;
+    }
+    localStorage.setItem('uwu_order_count', orderNumber);
+
     const itemsList = cartItems.map(item => 
         `• **${item.name}** (x${item.quantity}) - $${(item.price * item.quantity).toFixed(0)}`
     ).join('\n');
 
     const payload = {
         embeds: [{
-            title: "✨ Nuevo Pedido Recibido 🛍️",
+            title: `✨ Nuevo Pedido Recibido #${orderNumber} 🛍️`,
             description: "¡Alguien ha realizado una compra en el Menú UwU!",
             color: 16738740, // Color rosado (#ff6b74)
             fields: [
@@ -280,7 +289,7 @@ function sendOrderToDiscord(cartItems, total, discount) {
                 }
             ],
             footer: {
-                text: `Pedido realizado el ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}`
+                text: `Pedido #${orderNumber} • ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}`
             },
             thumbnail: {
                 url: "https://i.imgur.com/example.png" // Puedes poner un logo real aquí
