@@ -86,7 +86,6 @@ addToCartButtons.forEach(button => {
         const price = parseFloat(button.getAttribute('data-price'));
         
         addToCart(name, price);
-        cartModal.classList.remove('hidden');
     });
 });
 
@@ -100,11 +99,16 @@ function addToCart(name, price) {
     }
     
     updateCartUI();
+    showToast(`Agregado al carrito: ${name}`);
 }
 
 function removeFromCart(index) {
+    const removed = cart[index];
     cart.splice(index, 1);
     updateCartUI();
+    if (removed && removed.name) {
+        showToast(`Quitado del carrito: ${removed.name}`);
+    }
 }
 
 function changeQuantity(index, change) {
@@ -226,8 +230,20 @@ function updateProductButtons() {
                     e.stopPropagation();
                     let val = parseInt(qtyInput.value || '1', 10);
                     if (isNaN(val)) val = 1;
-                    val = Math.max(1, val - 1);
+                    if (val <= 1) {
+                        const idx = cart.findIndex(i => i.name === name);
+                        if (idx > -1) removeFromCart(idx);
+                        return;
+                    }
+                    val = val - 1;
                     qtyInput.value = val;
+                    if (val === 1) {
+                        const idx = cart.findIndex(i => i.name === name);
+                        if (idx > -1) {
+                            cart[idx].quantity = 1;
+                            updateCartUI();
+                        }
+                    }
                 });
                 
                 plusBtn.addEventListener('click', (e) => {
@@ -373,6 +389,10 @@ function adjustQuantityDraft(index, delta) {
     if (!input) return;
     let val = parseInt(input.value || '1', 10);
     if (isNaN(val)) val = 1;
+    if (delta < 0 && val <= 1) {
+        removeFromCart(index);
+        return;
+    }
     val = Math.max(1, Math.min(MAX_QTY, val + delta));
     input.value = val;
 }
@@ -436,4 +456,24 @@ function sendOrderToDiscord(cartItems, total, discount, customerName, orderType,
         console.error('Error al conectar con Discord:', error);
         console.warn('NOTA: Si estás ejecutando esto localmente, Discord bloquea las peticiones por seguridad (CORS). Intenta usar un proxy como https://corsproxy.io/?TU_WEBHOOK_URL');
     });
+}
+
+function showToast(text) {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = text;
+    container.appendChild(toast);
+    requestAnimationFrame(() => {
+        toast.classList.add('show');
+    });
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
 }

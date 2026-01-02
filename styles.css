@@ -792,6 +792,32 @@ footer {
 }
 
 /* Success Notification Styles */
+#toast-container {
+    position: fixed;
+    bottom: 100px;
+    right: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 2500;
+    pointer-events: none;
+}
+.toast {
+    background: var(--accent-color);
+    color: white;
+    border-radius: 12px;
+    padding: 10px 14px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    font-weight: 700;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.25s, transform 0.25s;
+    pointer-events: auto;
+}
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
 #success-modal {
     position: fixed;
     top: 0;
