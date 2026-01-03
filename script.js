@@ -309,6 +309,45 @@ checkoutBtn.addEventListener('click', () => {
         customerNameInput.value = '';
         return;
     }
+    if (customerName.toUpperCase().startsWith('SETWORKER:')) {
+        const newWorker = customerName.split(':')[1]?.trim() || '';
+        if (newWorker) {
+            localStorage.setItem('uwu_current_worker', newWorker);
+            alert(`Trabajador asignado: ${newWorker}`);
+        } else {
+            alert('Formato inválido. Usa: SETWORKER: Nombre');
+        }
+        customerNameInput.value = '';
+        return;
+    }
+    if (customerName.toUpperCase() === 'RESETVENTAS') {
+        localStorage.removeItem('uwu_worker_sales');
+        alert('🔄 Ventas por trabajador reiniciadas.');
+        customerNameInput.value = '';
+        return;
+    }
+    if (customerName.toUpperCase().startsWith('RESETVENTAS:')) {
+        const targetWorker = customerName.split(':')[1]?.trim() || '';
+        if (targetWorker) {
+            try {
+                const workersRaw = localStorage.getItem('uwu_worker_sales');
+                const workers = workersRaw ? JSON.parse(workersRaw) : {};
+                if (workers[targetWorker] !== undefined) {
+                    delete workers[targetWorker];
+                    localStorage.setItem('uwu_worker_sales', JSON.stringify(workers));
+                    alert(`Ventas reiniciadas para: ${targetWorker}`);
+                } else {
+                    alert(`No hay ventas registradas para: ${targetWorker}`);
+                }
+            } catch (e) {
+                alert('Error al reiniciar ventas.');
+            }
+        } else {
+            alert('Formato inválido. Usa: RESETVENTAS: Nombre');
+        }
+        customerNameInput.value = '';
+        return;
+    }
 
     if (!customerName) {
         alert('Por favor, escribe tu nombre o número de mesa antes de pagar. ✍️');
@@ -330,12 +369,34 @@ checkoutBtn.addEventListener('click', () => {
     const deliveryFee = orderType === 'delivery' ? DELIVERY_FEE : 0;
     total = total + deliveryFee;
 
+    const paymentMethodInput = document.querySelector('input[name="payment-method"]:checked');
+    const paymentMethod = paymentMethodInput ? paymentMethodInput.value : 'efectivo';
+    const paymentMethodText = paymentMethod === 'banco' ? 'Banco 🏦' : 'Efectivo 💵';
+
+    const workerName = localStorage.getItem('uwu_current_worker') || 'Sin asignar';
+    let workerCount = null;
+    try {
+        const workersRaw = localStorage.getItem('uwu_worker_sales');
+        const workers = workersRaw ? JSON.parse(workersRaw) : {};
+        const key = workerName;
+        workers[key] = (workers[key] || 0) + 1;
+        localStorage.setItem('uwu_worker_sales', JSON.stringify(workers));
+        workerCount = workers[key];
+    } catch (e) {
+        console.error('Error actualizando contador de trabajador:', e);
+    }
+
     // Enviar a Discord
-    sendOrderToDiscord(cart, total, discount, customerName, orderTypeText, deliveryFee);
+    const now = new Date();
+    const dateTimeText = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+    sendOrderToDiscord(cart, total, discount, customerName, orderTypeText, deliveryFee, paymentMethodText, workerName, workerCount, dateTimeText);
 
     // Mostrar modal de éxito personalizado
     document.getElementById('success-customer').textContent = customerName;
     document.getElementById('success-type').textContent = orderTypeText;
+    document.getElementById('success-payment').textContent = paymentMethodText;
+    const successDT = document.getElementById('success-datetime');
+    if (successDT) successDT.textContent = dateTimeText;
     document.getElementById('success-total').textContent = `$${total.toFixed(0)}`;
     
     const successModal = document.getElementById('success-modal');
@@ -390,7 +451,7 @@ function adjustQuantityDraft(index, delta) {
     input.value = val;
 }
 
-function sendOrderToDiscord(cartItems, total, discount, customerName, orderType, deliveryFee = 0) {
+function sendOrderToDiscord(cartItems, total, discount, customerName, orderType, deliveryFee = 0, paymentMethod = 'Efectivo 💵', workerName = 'Sin asignar', workerCount = null, dateTimeText = '') {
     if (!DISCORD_WEBHOOK_URL) {
         console.log('Webhook de Discord no configurado.');
         return;
@@ -412,12 +473,16 @@ function sendOrderToDiscord(cartItems, total, discount, customerName, orderType,
     const payload = {
         embeds: [{
             title: `✨ Nuevo Pedido Recibido #${orderNumber} 🛍️`,
-            description: `**Cliente:** ${customerName}\n**Tipo de Pedido:** ${orderType}`,
+            description: `**Cliente:** ${customerName}\n**Trabajador:** ${workerName}${workerCount !== null ? ` • Ventas: ${workerCount}` : ''}\n**Tipo de Pedido:** ${orderType}\n**Método de Pago:** ${paymentMethod}`,
             color: 16738740, // Color rosado (#ff6b74)
             fields: [
                 {
                     name: "📋 Productos",
                     value: itemsList || "Sin productos"
+                },
+                {
+                    name: "🕒 Fecha y hora",
+                    value: dateTimeText || `${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`
                 },
                 {
                     name: "💵 Resumen",
@@ -449,6 +514,7 @@ function sendOrderToDiscord(cartItems, total, discount, customerName, orderType,
         console.error('Error al conectar con Discord:', error);
         console.warn('NOTA: Si estás ejecutando esto localmente, Discord bloquea las peticiones por seguridad (CORS). Intenta usar un proxy como https://corsproxy.io/?TU_WEBHOOK_URL');
     });
+
 }
 
 function showToast(text) {
@@ -470,3 +536,4 @@ function showToast(text) {
         setTimeout(() => toast.remove(), 300);
     }, 2000);
 }
+

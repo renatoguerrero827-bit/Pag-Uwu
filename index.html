@@ -231,6 +231,21 @@
                 </div>
             </div>
 
+            <!-- Payment Method Selection -->
+            <div class="order-type-group">
+                <label class="order-type-label">Método de Pago:</label>
+                <div class="order-type-options">
+                    <label class="radio-option">
+                        <input type="radio" name="payment-method" value="efectivo" checked>
+                        <span>Efectivo 💵</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="payment-method" value="banco">
+                        <span>Banco 🏦</span>
+                    </label>
+                </div>
+            </div>
+
             <button id="clear-cart-btn">Vaciar carrito 🧹</button>
             <button id="checkout-btn">Pagar Ahora ✨</button>
         </div>
@@ -251,6 +266,14 @@
                     <div class="summary-row">
                         <span>Tipo:</span>
                         <strong id="success-type"></strong>
+                    </div>
+                    <div class="summary-row">
+                        <span>Pago:</span>
+                        <strong id="success-payment"></strong>
+                    </div>
+                    <div class="summary-row">
+                        <span>Fecha y hora:</span>
+                        <strong id="success-datetime"></strong>
                     </div>
                     <div class="summary-row total-row">
                         <span>Total:</span>
