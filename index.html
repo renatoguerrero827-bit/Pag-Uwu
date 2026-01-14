@@ -15,12 +15,15 @@
                 <div class="brand-text">
                     <h1>Menú Summer UwU ☀️</h1>
                     <p>¡Refrescante y adorable!</p>
+                    <div class="worker-status">
+                        <span id="worker-display"></span>
+                    </div>
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="container">
+    <main id="main-content" class="container">
         <!-- Bebestibles Section -->
         <section class="menu-category">
             <h2>Bebestibles 🥤</h2>
@@ -222,7 +225,7 @@
     </main>
     
     <!-- Promo Banner (Bottom) -->
-    <section class="promo-banner">
+    <section id="promo-banner" class="promo-banner">
         <h3>Promocion Especial</h3>
         <p>3 Comestibles + 3 Bebestibles por $1600</p>
     </section>
@@ -239,6 +242,9 @@
     <!-- Cart Floating Button -->
     <button id="cart-btn">
         🛒 <span id="cart-count">0</span>
+    </button>
+    <button id="account-btn" title="Cuenta">
+        👤
     </button>
 
     <!-- Cart Modal/Sidebar -->
@@ -328,6 +334,56 @@
                 <p class="success-note">Tu pedido llegará pronto. 🛵💨</p>
             </div>
             <button id="close-success-btn">¡Genial! 💖</button>
+        </div>
+    </div>
+    <div id="account-modal" class="modal hidden">
+        <div class="modal-content success-content">
+            <h2>Cuenta de Usuario</h2>
+            <div class="success-details">
+                <div class="order-summary-card">
+                    <div class="summary-row">
+                        <span>Usuario actual:</span>
+                        <strong id="account-current-user">Sin asignar</strong>
+                    </div>
+                    <div class="summary-row">
+                        <span>Ventas del usuario:</span>
+                        <strong id="account-current-sales">0</strong>
+                    </div>
+                </div>
+                <div class="customer-input-group">
+                    <input type="text" id="account-username" placeholder="Nombre de usuario..." maxlength="30">
+                </div>
+                <div class="order-type-options" style="justify-content: center;">
+                    <button id="account-save-btn" class="offer-btn" style="max-width:240px;">Guardar</button>
+                </div>
+                <div class="order-type-options" style="justify-content: center; margin-top:8px;">
+                    <button id="account-reset-user-sales" class="offer-btn" style="background:#ff6b6b; max-width:240px;">Reset ventas usuario</button>
+                </div>
+                <div class="order-type-options" style="justify-content: center; margin-top:8px;">
+                    <button id="account-logout-btn" class="offer-btn" style="background:#999; max-width:240px;">Cerrar sesión</button>
+                </div>
+            </div>
+            <button id="account-close-btn" style="margin-top:10px;">Cerrar</button>
+        </div>
+    </div>
+    <div id="login-modal" class="modal hidden">
+        <div class="modal-content success-content">
+            <h2>Iniciar Sesión</h2>
+            <div class="success-details">
+                <div class="customer-input-group">
+                    <input type="text" id="login-username" placeholder="Usuario..." maxlength="30" autocomplete="username">
+                </div>
+                <div class="customer-input-group">
+                    <input type="password" id="login-password" placeholder="Contraseña..." maxlength="64" autocomplete="current-password">
+                </div>
+                <div class="order-type-options" style="justify-content: center;">
+                    <button id="login-submit-btn" class="offer-btn" style="max-width:240px;">Ingresar</button>
+                </div>
+                <div class="order-type-options" style="justify-content: center; margin-top:8px;">
+                    <button id="login-register-btn" class="offer-btn" style="background:#3dbcb3; max-width:240px;">Crear cuenta</button>
+                </div>
+                <p id="login-error" style="text-align:center; color:#ff6b6b; font-weight:700; margin-top:8px;"></p>
+            </div>
         </div>
     </div>
 

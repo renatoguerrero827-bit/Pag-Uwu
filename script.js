@@ -29,6 +29,22 @@ const offerDrinksCount = document.getElementById('offer-drinks-count');
 const offerBundlesCount = document.getElementById('offer-bundles-count');
 const offerSavingsEl = document.getElementById('offer-savings');
 const clearCartBtn = document.getElementById('clear-cart-btn');
+const accountBtn = document.getElementById('account-btn');
+const accountModal = document.getElementById('account-modal');
+const accountCloseBtn = document.getElementById('account-close-btn');
+const accountSaveBtn = document.getElementById('account-save-btn');
+const accountResetUserSalesBtn = document.getElementById('account-reset-user-sales');
+const accountUsernameInput = document.getElementById('account-username');
+const accountCurrentUserEl = document.getElementById('account-current-user');
+const accountCurrentSalesEl = document.getElementById('account-current-sales');
+const workerDisplayEl = document.getElementById('worker-display');
+const accountLogoutBtn = document.getElementById('account-logout-btn');
+const loginModal = document.getElementById('login-modal');
+const loginUsernameInput = document.getElementById('login-username');
+const loginPasswordInput = document.getElementById('login-password');
+const loginSubmitBtn = document.getElementById('login-submit-btn');
+const loginRegisterBtn = document.getElementById('login-register-btn');
+const loginErrorEl = document.getElementById('login-error');
 
 const categories = {
     'Choco Kitty': 'beb',
@@ -51,6 +67,125 @@ const foodsCatalog = ['Kitty Jelly','Mochi Galaxy','Ice Tea Float','Bento uwu','
 const COLLECTIBLE_FEE = 400;
 let promo6x6Selected = false;
 let collectibleSelected = false;
+
+const USERS_KEY = 'uwu_users';
+const SESSION_KEY = 'uwu_session_user';
+
+async function sha256(text) {
+    const enc = new TextEncoder().encode(text);
+    const hash = await crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function getWorkerSales() {
+    try {
+        const raw = localStorage.getItem('uwu_worker_sales');
+        return raw ? JSON.parse(raw) : {};
+    } catch (_) {
+        return {};
+    }
+}
+function setWorkerSales(map) {
+    try {
+        localStorage.setItem('uwu_worker_sales', JSON.stringify(map));
+    } catch (_) {}
+}
+function getUsers() {
+    try {
+        const raw = localStorage.getItem(USERS_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch (_) {
+        return {};
+    }
+}
+function setUsers(map) {
+    try {
+        localStorage.setItem(USERS_KEY, JSON.stringify(map));
+    } catch (_) {}
+}
+function setSessionUser(username) {
+    try {
+        localStorage.setItem(SESSION_KEY, username);
+        localStorage.setItem('uwu_current_worker', username);
+    } catch (_) {}
+}
+function getSessionUser() {
+    return localStorage.getItem(SESSION_KEY) || null;
+}
+function updateWorkerDisplay() {
+    const name = localStorage.getItem('uwu_current_worker') || 'Sin asignar';
+    const salesMap = getWorkerSales();
+    const count = salesMap[name] || 0;
+    if (workerDisplayEl) {
+        workerDisplayEl.textContent = `Trabajador: ${name} • Ventas: ${count}`;
+    }
+    if (accountCurrentUserEl) accountCurrentUserEl.textContent = name;
+    if (accountCurrentSalesEl) accountCurrentSalesEl.textContent = count;
+}
+function showLoginRequired() {
+    if (!loginModal) return;
+    loginModal.classList.remove('hidden');
+}
+function hideLogin() {
+    if (!loginModal) return;
+    loginModal.classList.add('hidden');
+    if (loginErrorEl) loginErrorEl.textContent = '';
+    if (loginUsernameInput) loginUsernameInput.value = '';
+    if (loginPasswordInput) loginPasswordInput.value = '';
+}
+function setLockedUI(locked) {
+    const main = document.getElementById('main-content');
+    const cartButton = document.getElementById('cart-btn');
+    const promo = document.getElementById('promo-banner');
+    const accountButton = document.getElementById('account-btn');
+    const toggle = (el) => {
+        if (!el) return;
+        if (locked) el.classList.add('locked'); else el.classList.remove('locked');
+    };
+    toggle(main); toggle(cartButton); toggle(promo); toggle(accountButton);
+}
+async function handleLogin() {
+    const username = (loginUsernameInput && loginUsernameInput.value.trim()) || '';
+    const password = (loginPasswordInput && loginPasswordInput.value) || '';
+    if (!username || !password) {
+        if (loginErrorEl) loginErrorEl.textContent = 'Completa usuario y contraseña';
+        return;
+    }
+    const users = getUsers();
+    const hash = await sha256(password);
+    if (!users[username] || users[username] !== hash) {
+        if (loginErrorEl) loginErrorEl.textContent = 'Usuario o contraseña inválidos';
+        return;
+    }
+    setSessionUser(username);
+    updateWorkerDisplay();
+    hideLogin();
+    showToast(`Bienvenido, ${username}`);
+    setLockedUI(false);
+}
+async function handleRegister() {
+    const username = (loginUsernameInput && loginUsernameInput.value.trim()) || '';
+    const password = (loginPasswordInput && loginPasswordInput.value) || '';
+    if (!username || !password) {
+        if (loginErrorEl) loginErrorEl.textContent = 'Completa usuario y contraseña para registrar';
+        return;
+    }
+    const users = getUsers();
+    if (users[username]) {
+        if (loginErrorEl) loginErrorEl.textContent = 'Usuario ya existe';
+        return;
+    }
+    const hash = await sha256(password);
+    users[username] = hash;
+    setUsers(users);
+    setSessionUser(username);
+    const sales = getWorkerSales();
+    sales[username] = sales[username] || 0;
+    setWorkerSales(sales);
+    updateWorkerDisplay();
+    hideLogin();
+    showToast(`Cuenta creada: ${username}`);
+    setLockedUI(false);
+}
 
 function addCombo() {
     const top3D = drinksCatalog.slice(0,3);
@@ -146,6 +281,70 @@ if (clearCartBtn) {
         updateCartUI();
     });
 }
+
+if (accountBtn && accountModal) {
+    accountBtn.addEventListener('click', () => {
+        updateWorkerDisplay();
+        accountModal.classList.remove('hidden');
+    });
+}
+if (accountCloseBtn && accountModal) {
+    accountCloseBtn.addEventListener('click', () => {
+        accountModal.classList.add('hidden');
+    });
+}
+if (accountSaveBtn) {
+    accountSaveBtn.addEventListener('click', () => {
+        const val = (accountUsernameInput && accountUsernameInput.value.trim()) || '';
+        if (!val) return;
+        localStorage.setItem('uwu_current_worker', val);
+        const map = getWorkerSales();
+        map[val] = map[val] || 0;
+        setWorkerSales(map);
+        updateWorkerDisplay();
+        if (accountModal) accountModal.classList.add('hidden');
+        showToast(`Trabajador asignado: ${val}`);
+        if (accountUsernameInput) accountUsernameInput.value = '';
+    });
+}
+if (accountResetUserSalesBtn) {
+    accountResetUserSalesBtn.addEventListener('click', () => {
+        const name = localStorage.getItem('uwu_current_worker');
+        if (!name) return;
+        const map = getWorkerSales();
+        map[name] = 0;
+        setWorkerSales(map);
+        updateWorkerDisplay();
+        showToast(`Ventas reiniciadas para: ${name}`);
+    });
+}
+if (accountLogoutBtn) {
+    accountLogoutBtn.addEventListener('click', () => {
+        localStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem('uwu_current_worker');
+        updateWorkerDisplay();
+        if (accountModal) accountModal.classList.add('hidden');
+        showLoginRequired();
+        setLockedUI(true);
+    });
+}
+
+if (loginSubmitBtn) {
+    loginSubmitBtn.addEventListener('click', () => { handleLogin(); });
+}
+if (loginRegisterBtn) {
+    loginRegisterBtn.addEventListener('click', () => { handleRegister(); });
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const sessionUser = getSessionUser();
+    if (!sessionUser) {
+        showLoginRequired();
+        setLockedUI(true);
+    } else {
+        updateWorkerDisplay();
+        setLockedUI(false);
+    }
+});
 
 // Add to Cart Functionality
 addToCartButtons.forEach(button => {
@@ -457,11 +656,10 @@ checkoutBtn.addEventListener('click', () => {
     const workerName = localStorage.getItem('uwu_current_worker') || 'Sin asignar';
     let workerCount = null;
     try {
-        const workersRaw = localStorage.getItem('uwu_worker_sales');
-        const workers = workersRaw ? JSON.parse(workersRaw) : {};
+        const workers = getWorkerSales();
         const key = workerName;
         workers[key] = (workers[key] || 0) + 1;
-        localStorage.setItem('uwu_worker_sales', JSON.stringify(workers));
+        setWorkerSales(workers);
         workerCount = workers[key];
     } catch (e) {
         console.error('Error actualizando contador de trabajador:', e);
@@ -499,6 +697,7 @@ checkoutBtn.addEventListener('click', () => {
     cartModal.classList.add('hidden');
     promo6x6Selected = false;
     collectibleSelected = false;
+    updateWorkerDisplay();
 });
 
 function setQuantity(index) {

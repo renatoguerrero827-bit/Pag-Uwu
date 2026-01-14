@@ -607,6 +607,87 @@ footer {
     font-size: 0.9rem;
 }
 
+/* Account Floating Button */
+#account-btn {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    font-size: 1.4rem;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    transition: transform 0.3s;
+}
+
+#account-btn:hover {
+    transform: scale(1.1) rotate(10deg);
+}
+
+/* Account Modal */
+#account-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0,0,0,0.25);
+    pointer-events: none;
+}
+
+#account-modal.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-20px);
+}
+
+#login-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    z-index: 4000;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0,0,0,0.25);
+    pointer-events: none;
+}
+
+#login-modal.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-20px);
+}
+
+.worker-status {
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    opacity: 0.95;
+}
+
+/* Locked UI (requires login) */
+#main-content.locked,
+#promo-banner.locked,
+#cart-btn.locked,
+#account-btn.locked {
+    display: none !important;
+}
+
 .cart-item-price {
     color: var(--secondary-color);
     font-size: 0.85rem;
@@ -707,7 +788,10 @@ footer {
     margin-bottom: 10px;
 }
 
-#customer-name {
+#customer-name,
+#login-username,
+#login-password,
+#account-username {
     width: 100%;
     padding: 10px 12px;
     border: 2px solid #eee;
@@ -715,13 +799,17 @@ footer {
     font-size: 0.95rem;
     font-family: var(--body-font);
     outline: none;
-    transition: border-color 0.3s;
+    transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
     background: #f9f9f9;
 }
 
-#customer-name:focus {
+#customer-name:focus,
+#login-username:focus,
+#login-password:focus,
+#account-username:focus {
     border-color: var(--accent-color);
     background: white;
+    box-shadow: 0 0 0 3px rgba(95,215,207,0.25);
 }
 
 .order-type-group {
@@ -834,13 +922,13 @@ footer {
     top: 0;
     left: 0;
     width: 100%;
+    height: 100%;
     display: flex;
     z-index: 3000;
     justify-content: center;
-    align-items: flex-start;
-    background-color: transparent;
+    align-items: center;
+    background-color: rgba(0,0,0,0.25);
     pointer-events: none;
-    padding-top: 20px;
 }
 
 #success-modal.hidden {
@@ -851,16 +939,16 @@ footer {
 
 .success-content {
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    border-radius: 16px;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.22);
     text-align: center;
-    max-width: 400px;
+    max-width: 420px;
     width: 90%;
-    padding: 20px;
-    pointer-events: auto; /* Re-enable clicks on the content */
+    padding: 24px 22px 20px;
+    pointer-events: auto;
     border-top: 5px solid var(--accent-color);
     transform: translateY(0);
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
 }
 
 #success-modal.hidden .success-content {
@@ -908,6 +996,13 @@ footer {
     margin-top: 10px;
 }
 
+#login-modal h2,
+#account-modal h2 {
+    font-family: var(--heading-font);
+    color: var(--secondary-color);
+    margin-bottom: 12px;
+}
+
 #close-success-btn {
     background-color: transparent;
     color: var(--accent-color);
@@ -946,5 +1041,10 @@ footer {
     
     .cart-content {
         max-width: 100%;
+    }
+
+    .success-content {
+        max-width: 92%;
+        padding: 18px 16px 16px;
     }
 }
