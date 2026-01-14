@@ -19,6 +19,11 @@ const offerNoteElement = document.getElementById('cart-offer-note');
 const checkoutBtn = document.getElementById('checkout-btn');
 const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
 const offerAddBtn = document.getElementById('offer-add-btn');
+const offerAdd6x6Btn = document.getElementById('offer-add-6x6');
+const offerAdd6x6ColBtn = document.getElementById('offer-add-6x6-col');
+const offerAddCol1Btn = document.getElementById('offer-add-col-1');
+const offerAddCol5Btn = document.getElementById('offer-add-col-5');
+const offerAddCol10Btn = document.getElementById('offer-add-col-10');
 const offerFoodsCount = document.getElementById('offer-foods-count');
 const offerDrinksCount = document.getElementById('offer-drinks-count');
 const offerBundlesCount = document.getElementById('offer-bundles-count');
@@ -43,16 +48,77 @@ const categories = {
 
 const drinksCatalog = ['Choco Kitty','Cat Paw Café','Donut Milkshake','Summer Bubble','uwu Galaxy','Sandía Fresh','Ice Tea'];
 const foodsCatalog = ['Kitty Jelly','Mochi Galaxy','Ice Tea Float','Bento uwu','Kitty Nigiris','Chick Burger'];
+const COLLECTIBLE_FEE = 400;
+let promo6x6Selected = false;
+let collectibleSelected = false;
 
 function addCombo() {
-    const pick3 = (list) => list.slice(0,3);
-    pick3(drinksCatalog).forEach(name => addToCart(name, 500));
-    pick3(foodsCatalog).forEach(name => addToCart(name, 500));
+    const top3D = drinksCatalog.slice(0,3);
+    const top3F = foodsCatalog.slice(0,3);
+    addToCartQty(top3D[0], 500, 2);
+    addToCartQty(top3D[1], 500, 1);
+    addToCartQty(top3F[0], 500, 2);
+    addToCartQty(top3F[1], 500, 1);
+    updateCartUI();
+    showToast('Combo 3+3 agregado');
+}
+function addPromo6x6(includeCollectible) {
+    const top3D = drinksCatalog.slice(0,3);
+    const top3F = foodsCatalog.slice(0,3);
+    addToCartQty(top3D[0], 500, 3);
+    addToCartQty(top3D[1], 500, 2);
+    addToCartQty(top3D[2], 500, 1);
+    addToCartQty(top3F[0], 500, 3);
+    addToCartQty(top3F[1], 500, 2);
+    addToCartQty(top3F[2], 500, 1);
+    promo6x6Selected = true;
+    collectibleSelected = !!includeCollectible;
+    updateCartUI();
+    showToast(includeCollectible ? 'Promo 6+6 + coleccionable agregada' : 'Promo 6+6 agregada');
+}
+
+function addCollectiblesPack(count) {
+    const qty = Math.max(1, Math.min(MAX_QTY, count));
+    const unitPrice = qty === 1 ? 1200 : 800;
+    addToCartQty('Coleccionable', unitPrice, qty);
+    updateCartUI();
+    showToast(`Coleccionables x${qty} agregados`);
 }
 
 if (offerAddBtn) {
     offerAddBtn.addEventListener('click', () => {
         addCombo();
+        cartModal.classList.remove('hidden');
+    });
+}
+if (offerAdd6x6Btn) {
+    offerAdd6x6Btn.addEventListener('click', () => {
+        addPromo6x6(false);
+        cartModal.classList.remove('hidden');
+    });
+}
+if (offerAdd6x6ColBtn) {
+    offerAdd6x6ColBtn.addEventListener('click', () => {
+        addPromo6x6(true);
+        cartModal.classList.remove('hidden');
+    });
+}
+
+if (offerAddCol1Btn) {
+    offerAddCol1Btn.addEventListener('click', () => {
+        addCollectiblesPack(1);
+        cartModal.classList.remove('hidden');
+    });
+}
+if (offerAddCol5Btn) {
+    offerAddCol5Btn.addEventListener('click', () => {
+        addCollectiblesPack(5);
+        cartModal.classList.remove('hidden');
+    });
+}
+if (offerAddCol10Btn) {
+    offerAddCol10Btn.addEventListener('click', () => {
+        addCollectiblesPack(10);
         cartModal.classList.remove('hidden');
     });
 }
@@ -75,6 +141,8 @@ cartModal.addEventListener('click', (e) => {
 if (clearCartBtn) {
     clearCartBtn.addEventListener('click', () => {
         cart = [];
+        promo6x6Selected = false;
+        collectibleSelected = false;
         updateCartUI();
     });
 }
@@ -100,6 +168,16 @@ function addToCart(name, price) {
     
     updateCartUI();
     showToast(`Agregado al carrito: ${name}`);
+}
+
+function addToCartQty(name, price, qty) {
+    const existingItem = cart.find(item => item.name === name);
+    const addQty = Math.max(1, Math.min(MAX_QTY, qty));
+    if (existingItem) {
+        existingItem.quantity = Math.min(MAX_QTY, existingItem.quantity + addQty);
+    } else {
+        cart.push({ name, price, quantity: addQty });
+    }
 }
 
 function removeFromCart(index) {
@@ -171,6 +249,7 @@ function updateCartUI() {
                         <input id="qty-input-${index}" class="qty-input" type="number" min="1" max="${MAX_QTY}" value="${item.quantity}" oninput="setQuantity(${index})">
                         <button class="qty-btn" onclick="changeQuantity(${index}, 1)">+</button>
                     </div>
+                    <div class="cart-item-line-total">$${(item.price * item.quantity).toFixed(2)}</div>
                     <button class="cart-item-remove" onclick="removeFromCart(${index})">🗑️</button>
                 `;
                 
@@ -368,6 +447,8 @@ checkoutBtn.addEventListener('click', () => {
     const orderTypeText = orderType === 'delivery' ? 'Delivery 🛵' : 'Local 🏪';
     const deliveryFee = orderType === 'delivery' ? DELIVERY_FEE : 0;
     total = total + deliveryFee;
+    const collectibleFeeApplied = collectibleSelected ? COLLECTIBLE_FEE : 0;
+    total = total + collectibleFeeApplied;
 
     const paymentMethodInput = document.querySelector('input[name="payment-method"]:checked');
     const paymentMethod = paymentMethodInput ? paymentMethodInput.value : 'efectivo';
@@ -389,7 +470,8 @@ checkoutBtn.addEventListener('click', () => {
     // Enviar a Discord
     const now = new Date();
     const dateTimeText = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
-    sendOrderToDiscord(cart, total, discount, customerName, orderTypeText, deliveryFee, paymentMethodText, workerName, workerCount, dateTimeText);
+    const giftsText = promo6x6Selected ? '2 minidonuts' : '';
+    sendOrderToDiscord(cart, total, discount, customerName, orderTypeText, deliveryFee, paymentMethodText, workerName, workerCount, dateTimeText, giftsText, collectibleFeeApplied);
 
     // Mostrar modal de éxito personalizado
     document.getElementById('success-customer').textContent = customerName;
@@ -415,6 +497,8 @@ checkoutBtn.addEventListener('click', () => {
     
     updateCartUI();
     cartModal.classList.add('hidden');
+    promo6x6Selected = false;
+    collectibleSelected = false;
 });
 
 function setQuantity(index) {
@@ -451,7 +535,7 @@ function adjustQuantityDraft(index, delta) {
     input.value = val;
 }
 
-function sendOrderToDiscord(cartItems, total, discount, customerName, orderType, deliveryFee = 0, paymentMethod = 'Efectivo 💵', workerName = 'Sin asignar', workerCount = null, dateTimeText = '') {
+function sendOrderToDiscord(cartItems, total, discount, customerName, orderType, deliveryFee = 0, paymentMethod = 'Efectivo 💵', workerName = 'Sin asignar', workerCount = null, dateTimeText = '', giftsText = '', collectibleFeeApplied = 0) {
     if (!DISCORD_WEBHOOK_URL) {
         console.log('Webhook de Discord no configurado.');
         return;
@@ -480,13 +564,14 @@ function sendOrderToDiscord(cartItems, total, discount, customerName, orderType,
                     name: "📋 Productos",
                     value: itemsList || "Sin productos"
                 },
+                ...(giftsText ? [{ name: "🎁 Regalos", value: giftsText + (collectibleFeeApplied > 0 ? ' + coleccionable' : '') }] : (collectibleFeeApplied > 0 ? [{ name: "🎁 Regalos", value: 'Coleccionable' }] : [])),
                 {
                     name: "🕒 Fecha y hora",
                     value: dateTimeText || `${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`
                 },
                 {
                     name: "💵 Resumen",
-                    value: `Subtotal: $${(total + discount - deliveryFee).toFixed(0)}\nDescuento: -$${discount.toFixed(0)}${deliveryFee > 0 ? `\nDelivery: +$${deliveryFee.toFixed(0)}` : ''}\n**Total a Pagar: $${total.toFixed(0)}**`
+                    value: `Subtotal: $${(total + discount - deliveryFee - collectibleFeeApplied).toFixed(0)}\nDescuento: -$${discount.toFixed(0)}${deliveryFee > 0 ? `\nDelivery: +$${deliveryFee.toFixed(0)}` : ''}${collectibleFeeApplied > 0 ? `\nColeccionable: +$${collectibleFeeApplied.toFixed(0)}` : ''}\n**Total a Pagar: $${total.toFixed(0)}**`
                 }
             ],
             footer: {
