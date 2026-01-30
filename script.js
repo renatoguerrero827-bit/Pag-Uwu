@@ -6,7 +6,8 @@ let cart = [];
 const DISCORD_WEBHOOK_KEY = 'https://discord.com/api/webhooks/1456194404216737857/y5_szzKa4gH12g0ANvy4ZXL_FEjXF0Ue0CaDVCi_61y0VYrhfjJ-u13Aua5SU6cz5Fre'; 
 
 // El proxy es necesario para que funcione desde el navegador (evitar bloqueo CORS)
-const CORS_PROXY = 'https://corsproxy.io/?';
+// Usamos thingproxy como alternativa si corsproxy falla
+const CORS_PROXY = 'https://thingproxy.freeboard.io/fetch/';
 
 const DELIVERY_FEE = 500;
 const MAX_QTY = 99;
@@ -27,7 +28,6 @@ const offerAdd6x6ColBtn = document.getElementById('offer-add-6x6-col');
 const offerAddCol1Btn = document.getElementById('offer-add-col-1');
 const offerAddCol5Btn = document.getElementById('offer-add-col-5');
 const offerAddCol10Btn = document.getElementById('offer-add-col-10');
-const offerAddColBoxBtn = document.getElementById('offer-add-col-box');
 const offerFoodsCount = document.getElementById('offer-foods-count');
 const offerDrinksCount = document.getElementById('offer-drinks-count');
 const offerBundlesCount = document.getElementById('offer-bundles-count');
@@ -261,12 +261,7 @@ if (offerAddCol10Btn) {
         cartModal.classList.remove('hidden');
     });
 }
-if (offerAddColBoxBtn) {
-    offerAddColBoxBtn.addEventListener('click', () => {
-        addToCart('Caja Coleccionables / Accesorios', 10000);
-        cartModal.classList.remove('hidden');
-    });
-}
+
 
 // Toggle Cart Visibility
 cartBtn.addEventListener('click', () => {
@@ -346,6 +341,17 @@ if (loginRegisterBtn) {
     loginRegisterBtn.addEventListener('click', () => { handleRegister(); });
 }
 document.addEventListener('DOMContentLoaded', () => {
+    // Re-attach listener for box button to ensure it works
+    const boxBtn = document.getElementById('offer-add-col-box');
+    if (boxBtn) {
+        boxBtn.addEventListener('click', () => {
+            console.log('Agregando caja...');
+            addToCart('Caja Coleccionables y Accesorios', 10000);
+            const modal = document.getElementById('cart-modal');
+            if(modal) modal.classList.remove('hidden');
+        });
+    }
+
     const sessionUser = getSessionUser();
     if (!sessionUser) {
         showLoginRequired();
@@ -799,12 +805,15 @@ function sendOrderToDiscord(cartItems, total, discount, customerName, orderType,
         },
         body: JSON.stringify(payload)
     })
-    .then(response => {
+    .then(async response => {
         if (!response.ok) {
-            console.error('Error enviando a Discord:', response.statusText);
-            alert(`⚠️ Error enviando pedido a Discord: ${response.status} ${response.statusText}\nVerifica que el Webhook siga siendo válido.`);
+            const errorText = await response.text();
+            console.error('Error enviando a Discord:', response.status, errorText);
+            alert(`⚠️ Error enviando pedido a Discord:\nCódigo: ${response.status} ${response.statusText}\nDetalles: ${errorText.substring(0, 200)}\n\nPor favor verifica el Webhook.`);
         } else {
             console.log('Pedido registrado en Discord correctamente');
+            // Opcional: avisar éxito
+            // alert('✅ Pedido enviado al servidor de Discord.');
         }
     })
     .catch(error => {
