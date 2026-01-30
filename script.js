@@ -797,12 +797,24 @@ function sendOrderToDiscord(cartItems, total, discount, customerName, orderType,
         }]
     };
 
-    // Función interna para intentar enviar con diferentes proxies
-    const attemptSend = (proxyUrl, isRetry) => {
-        // Algunos proxies requieren encoding, otros no. encodeURIComponent suele ser seguro.
-        const targetUrl = proxyUrl + encodeURIComponent(DISCORD_WEBHOOK_KEY);
+    // Lista de proxies a probar en orden
+    // Algunos requieren encodeURIComponent, otros prefieren la URL cruda
+    const proxies = [
+        { base: 'https://corsproxy.io/?', encode: false },
+        { base: 'https://thingproxy.freeboard.io/fetch/', encode: false },
+        { base: 'https://api.allorigins.win/raw?url=', encode: true }
+    ];
+
+    const attemptSend = (index) => {
+        if (index >= proxies.length) {
+            alert('⚠️ Error de Conexión Crítico:\nTodos los intentos fallaron. Es posible que tu red o Discord estén bloqueando las conexiones.');
+            return;
+        }
+
+        const proxy = proxies[index];
+        const targetUrl = proxy.base + (proxy.encode ? encodeURIComponent(DISCORD_WEBHOOK_KEY) : DISCORD_WEBHOOK_KEY);
         
-        console.log(`Intentando enviar a Discord vía: ${proxyUrl}`);
+        console.log(`Intento ${index + 1}/${proxies.length} usando: ${proxy.base}`);
 
         fetch(targetUrl, {
             method: 'POST',
@@ -813,31 +825,32 @@ function sendOrderToDiscord(cartItems, total, discount, customerName, orderType,
         })
         .then(async response => {
             if (!response.ok) {
-                // Si el servidor responde (400, 404, 500), NO es culpa del proxy. Es error de validación/servidor.
+                // Si es error 429 (Rate Limit) o 403 (Forbidden), puede ser bloqueo de IP del proxy.
+                // En ese caso, vale la pena intentar el siguiente proxy.
+                if (response.status === 429 || response.status === 403) {
+                    console.warn(`Bloqueo de Discord (${response.status}) en este proxy. Probando siguiente...`);
+                    attemptSend(index + 1);
+                    return;
+                }
+
+                // Otros errores (400 Bad Request, 404 Not Found) son definitivos (culpa del payload o webhook)
                 const errorText = await response.text();
                 console.error('Discord rechazó la petición:', response.status, errorText);
-                alert(`⚠️ Discord rechazó el pedido:\nStatus: ${response.status} ${response.statusText}\nDetalles: ${errorText.substring(0, 150)}\n\n(El bot funciona, pero los datos son rechazados o el webhook es inválido)`);
+                alert(`⚠️ Discord rechazó el pedido:\nStatus: ${response.status} ${response.statusText}\nDetalles: ${errorText.substring(0, 150)}\n\n(Revisa que el Webhook sea válido)`);
             } else {
-                console.log('Pedido registrado en Discord correctamente vía ' + proxyUrl);
+                console.log('Pedido registrado en Discord correctamente vía ' + proxy.base);
                 alert('✅ Pedido enviado a Discord con éxito! 🚀');
             }
         })
         .catch(error => {
-            console.warn(`Fallo de conexión con proxy ${proxyUrl}:`, error);
-            
-            if (!isRetry) {
-                // Si falla el primero (corsproxy), probamos el segundo (thingproxy)
-                console.log('Intentando con proxy de respaldo (thingproxy)...');
-                attemptSend('https://thingproxy.freeboard.io/fetch/', true);
-            } else {
-                // Si fallan ambos
-                alert('⚠️ Error de Conexión Crítico:\nNo se pudo conectar con Discord usando los proxies disponibles.\n\nPosibles causas:\n1. Problemas de internet.\n2. Discord está bloqueando los proxies públicos temporalmente.\n3. Bloqueador de anuncios interfiriendo.');
-            }
+            console.warn(`Fallo de conexión con proxy ${proxy.base}:`, error);
+            // Intentar con el siguiente proxy
+            attemptSend(index + 1);
         });
     };
 
-    // Iniciamos intento principal con corsproxy.io (suele ser el más rápido)
-    attemptSend('https://corsproxy.io/?', false);
+    // Iniciar secuencia de intentos
+    attemptSend(0);
 
 }
 
