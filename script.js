@@ -2,9 +2,12 @@
 let cart = [];
 
 // CONFIGURACIÓN DISCORD
-// Pega aquí tu URL del Webhook de Discord
-// Nota: Si usas esto desde el navegador directamente, es posible que necesites un proxy CORS (ej: https://corsproxy.io/?TU_URL)
-const DISCORD_WEBHOOK_URL = 'https://corsproxy.io/?https://discord.com/api/webhooks/1456194404216737857/y5_szzKa4gH12g0ANvy4ZXL_FEjXF0Ue0CaDVCi_61y0VYrhfjJ-u13Aua5SU6cz5Fre'; 
+// Pega aquí SOLAMENTE la URL que te da Discord (sin proxies)
+const DISCORD_WEBHOOK_KEY = 'https://discord.com/api/webhooks/1456194404216737857/y5_szzKa4gH12g0ANvy4ZXL_FEjXF0Ue0CaDVCi_61y0VYrhfjJ-u13Aua5SU6cz5Fre'; 
+
+// El proxy es necesario para que funcione desde el navegador (evitar bloqueo CORS)
+const CORS_PROXY = 'https://corsproxy.io/?';
+
 const DELIVERY_FEE = 500;
 const MAX_QTY = 99;
 
@@ -24,6 +27,7 @@ const offerAdd6x6ColBtn = document.getElementById('offer-add-6x6-col');
 const offerAddCol1Btn = document.getElementById('offer-add-col-1');
 const offerAddCol5Btn = document.getElementById('offer-add-col-5');
 const offerAddCol10Btn = document.getElementById('offer-add-col-10');
+const offerAddColBoxBtn = document.getElementById('offer-add-col-box');
 const offerFoodsCount = document.getElementById('offer-foods-count');
 const offerDrinksCount = document.getElementById('offer-drinks-count');
 const offerBundlesCount = document.getElementById('offer-bundles-count');
@@ -254,6 +258,12 @@ if (offerAddCol5Btn) {
 if (offerAddCol10Btn) {
     offerAddCol10Btn.addEventListener('click', () => {
         addCollectiblesPack(10);
+        cartModal.classList.remove('hidden');
+    });
+}
+if (offerAddColBoxBtn) {
+    offerAddColBoxBtn.addEventListener('click', () => {
+        addToCart('Caja Coleccionables / Accesorios', 10000);
         cartModal.classList.remove('hidden');
     });
 }
@@ -735,10 +745,13 @@ function adjustQuantityDraft(index, delta) {
 }
 
 function sendOrderToDiscord(cartItems, total, discount, customerName, orderType, deliveryFee = 0, paymentMethod = 'Efectivo 💵', workerName = 'Sin asignar', workerCount = null, dateTimeText = '', giftsText = '', collectibleFeeApplied = 0) {
-    if (!DISCORD_WEBHOOK_URL) {
+    if (!DISCORD_WEBHOOK_KEY) {
         console.log('Webhook de Discord no configurado.');
         return;
     }
+
+    // Construir URL final con Proxy
+    const finalUrl = CORS_PROXY + DISCORD_WEBHOOK_KEY;
 
     // Obtener y actualizar número de orden
     let orderNumber = localStorage.getItem('uwu_order_count');
@@ -779,7 +792,7 @@ function sendOrderToDiscord(cartItems, total, discount, customerName, orderType,
         }]
     };
 
-    fetch(DISCORD_WEBHOOK_URL, {
+    fetch(finalUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -789,14 +802,14 @@ function sendOrderToDiscord(cartItems, total, discount, customerName, orderType,
     .then(response => {
         if (!response.ok) {
             console.error('Error enviando a Discord:', response.statusText);
-            // Si falla por CORS, el navegador lanzará error en el catch normalmente o response type opaque
+            alert(`⚠️ Error enviando pedido a Discord: ${response.status} ${response.statusText}\nVerifica que el Webhook siga siendo válido.`);
         } else {
             console.log('Pedido registrado en Discord correctamente');
         }
     })
     .catch(error => {
         console.error('Error al conectar con Discord:', error);
-        console.warn('NOTA: Si estás ejecutando esto localmente, Discord bloquea las peticiones por seguridad (CORS). Intenta usar un proxy como https://corsproxy.io/?TU_WEBHOOK_URL');
+        alert('⚠️ No se pudo conectar con el bot de Discord.\nPosible causa: El proxy (corsproxy.io) puede estar caído o bloqueado.\nIntenta de nuevo más tarde.');
     });
 
 }
