@@ -756,8 +756,7 @@ function sendOrderToDiscord(cartItems, total, discount, customerName, orderType,
         return;
     }
 
-    // Construir URL final con Proxy
-    const finalUrl = CORS_PROXY + DISCORD_WEBHOOK_KEY;
+    // URL se construye dinámicamente en el envío
 
     // Obtener y actualizar número de orden
     let orderNumber = localStorage.getItem('uwu_order_count');
@@ -798,28 +797,47 @@ function sendOrderToDiscord(cartItems, total, discount, customerName, orderType,
         }]
     };
 
-    fetch(finalUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-    })
-    .then(async response => {
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Error enviando a Discord:', response.status, errorText);
-            alert(`⚠️ Error enviando pedido a Discord:\nCódigo: ${response.status} ${response.statusText}\nDetalles: ${errorText.substring(0, 200)}\n\nPor favor verifica el Webhook.`);
-        } else {
-            console.log('Pedido registrado en Discord correctamente');
-            // Opcional: avisar éxito
-            // alert('✅ Pedido enviado al servidor de Discord.');
-        }
-    })
-    .catch(error => {
-        console.error('Error al conectar con Discord:', error);
-        alert('⚠️ No se pudo conectar con el bot de Discord.\nPosible causa: El proxy (corsproxy.io) puede estar caído o bloqueado.\nIntenta de nuevo más tarde.');
-    });
+    // Función interna para intentar enviar con diferentes proxies
+    const attemptSend = (proxyUrl, isRetry) => {
+        // Algunos proxies requieren encoding, otros no. encodeURIComponent suele ser seguro.
+        const targetUrl = proxyUrl + encodeURIComponent(DISCORD_WEBHOOK_KEY);
+        
+        console.log(`Intentando enviar a Discord vía: ${proxyUrl}`);
+
+        fetch(targetUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(async response => {
+            if (!response.ok) {
+                // Si el servidor responde (400, 404, 500), NO es culpa del proxy. Es error de validación/servidor.
+                const errorText = await response.text();
+                console.error('Discord rechazó la petición:', response.status, errorText);
+                alert(`⚠️ Discord rechazó el pedido:\nStatus: ${response.status} ${response.statusText}\nDetalles: ${errorText.substring(0, 150)}\n\n(El bot funciona, pero los datos son rechazados o el webhook es inválido)`);
+            } else {
+                console.log('Pedido registrado en Discord correctamente vía ' + proxyUrl);
+                alert('✅ Pedido enviado a Discord con éxito! 🚀');
+            }
+        })
+        .catch(error => {
+            console.warn(`Fallo de conexión con proxy ${proxyUrl}:`, error);
+            
+            if (!isRetry) {
+                // Si falla el primero (corsproxy), probamos el segundo (thingproxy)
+                console.log('Intentando con proxy de respaldo (thingproxy)...');
+                attemptSend('https://thingproxy.freeboard.io/fetch/', true);
+            } else {
+                // Si fallan ambos
+                alert('⚠️ Error de Conexión Crítico:\nNo se pudo conectar con Discord usando los proxies disponibles.\n\nPosibles causas:\n1. Problemas de internet.\n2. Discord está bloqueando los proxies públicos temporalmente.\n3. Bloqueador de anuncios interfiriendo.');
+            }
+        });
+    };
+
+    // Iniciamos intento principal con corsproxy.io (suele ser el más rápido)
+    attemptSend('https://corsproxy.io/?', false);
 
 }
 
